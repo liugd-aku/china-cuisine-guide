@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国各省美食攻略 · 舌尖上的中国</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;--bg2: #1a1d27;--bg3: #242836;
+  --text: #e0e0e0;--text2: #999;--accent: #e74c3c;
+  --accent2: #f39c12;--border: #2a2d3a;--green: #27ae60;--blue: #3498db;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-y:scroll}
+.hero{text-align:center;padding:80px 20px 50px;background:linear-gradient(135deg,#1a0a0a 0%,#0f1117 50%,#0a0a1a 100%)}
+.hero h1{font-size:3em;font-weight:900;background:linear-gradient(90deg,#e74c3c,#f39c12,#e74c3c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+.hero p{color:var(--text2);font-size:1.2em;max-width:700px;margin:0 auto}
+.stats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;padding:30px 20px;max-width:900px;margin:0 auto}
+.stat{text-align:center}.stat .num{font-size:2.2em;font-weight:900;color:var(--accent2)}.stat .label{color:var(--text2);font-size:.9em;margin-top:4px}
+nav{display:flex;justify-content:center;gap:4px;padding:0 20px 20px;flex-wrap:wrap}
+nav button{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:10px 24px;border-radius:8px;cursor:pointer;font-size:.95em;transition:all .2s}
+nav button:hover{color:var(--text);border-color:var(--accent)}
+nav button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.container{max-width:1400px;margin:0 auto;padding:0 20px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.chart-box{background:var(--bg2);border-radius:12px;padding:20px;margin:20px 0;border:1px solid var(--border)}
+.chart-box h3{margin-bottom:15px;color:var(--accent2);font-size:1.15em}
+.chart-wrap{width:100%;height:550px}.chart-wrap.map{height:650px}
+.section-title{color:var(--accent2);font-size:1.3em;margin:28px 0 14px;padding-left:12px;border-left:3px solid var(--accent)}
+
+/* Cuisine cards with images */
+.cuisine-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(340px,1fr));gap:18px;padding:10px 0}
+.cuisine-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .2s,border-color .2s}
+.cuisine-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.cuisine-card .card-img{width:100%;height:200px;object-fit:cover;display:block;background:var(--bg3)}
+.cuisine-card .card-img-fb{width:100%;height:200px;display:flex;align-items:center;justify-content:center;font-size:4em;background:linear-gradient(135deg,#2a1a0a,#1a2a1a)}
+.cuisine-card .card-body{padding:18px}
+.cuisine-card h3{color:var(--accent2);font-size:1.15em;margin-bottom:8px}
+.cuisine-card .province{display:inline-block;background:var(--bg3);padding:2px 10px;border-radius:12px;font-size:.8em;color:var(--text2);margin-right:4px;margin-bottom:4px}
+.cuisine-card .dishes{color:var(--text);font-size:.9em;margin:8px 0;line-height:1.7}
+.cuisine-card .dish-tag{display:inline-block;background:rgba(231,76,60,.15);color:var(--accent);padding:2px 8px;border-radius:4px;font-size:.82em;margin:2px 3px 2px 0}
+
+/* Province grid */
+.province-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(340px,1fr));gap:16px;padding:10px 0}
+.province-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s}
+.province-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.province-card .pname{font-size:1.2em;font-weight:700;color:#fff;margin-bottom:6px}
+.province-card .pcuisine{color:var(--accent);font-size:.85em;margin-bottom:10px}
+.province-card .psection{margin:8px 0}
+.province-card .psection .title{color:var(--accent2);font-size:.85em;font-weight:600}
+.province-card .psection .content{color:var(--text);font-size:.9em;line-height:1.6}
+
+/* Recipe cards */
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(320px,1fr));gap:16px;padding:10px 0}
+.recipe-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s}
+.recipe-card:hover{border-color:var(--accent2);transform:translateY(-2px)}
+.recipe-card .recipe-img-wrap{position:relative;height:180px;overflow:hidden}
+.recipe-card .recipe-img{width:100%;height:100%;object-fit:cover;display:block;background:var(--bg3)}
+.recipe-card .recipe-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.recipe-card:hover .recipe-overlay{opacity:1}
+.recipe-overlay span{background:var(--accent);color:#fff;padding:8px 20px;border-radius:20px;font-size:.9em;font-weight:600}
+.recipe-card .recipe-body{padding:16px}
+.recipe-card .recipe-name{font-size:1.1em;font-weight:700;color:#fff;margin-bottom:4px}
+.recipe-card .recipe-meta{display:flex;gap:16px;color:var(--text2);font-size:.82em;margin-bottom:6px}
+.recipe-card .recipe-cuisine-tag{display:inline-block;background:rgba(243,156,18,.15);color:var(--accent2);padding:2px 8px;border-radius:4px;font-size:.78em;margin-bottom:4px}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;justify-content:center;align-items:flex-start;overflow-y:auto;padding:40px 20px}
+.modal-overlay.show{display:flex}
+.modal-content{background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:720px;width:100%;margin:auto;padding:0;overflow:hidden}
+.modal-header{position:relative;height:280px;overflow:hidden}
+.modal-header img{width:100%;height:100%;object-fit:cover}
+.modal-close{position:absolute;top:12px;right:12px;width:36px;height:36px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;font-size:1.2em;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.modal-close:hover{background:var(--accent)}
+.modal-body{padding:28px}
+.modal-body h2{font-size:1.6em;color:#fff;margin-bottom:8px}
+.modal-body .modal-tags{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.modal-body .modal-tags span{font-size:.85em;padding:4px 12px;border-radius:12px}
+.modal-body .tag-diff{background:rgba(39,174,96,.15);color:var(--green)}
+.modal-body .tag-time{background:rgba(52,152,219,.15);color:var(--blue)}
+.modal-body .tag-cuisine{background:rgba(243,156,18,.15);color:var(--accent2)}
+.modal-section{margin-bottom:20px}
+.modal-section h4{color:var(--accent2);font-size:1em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.modal-section .ingredients{display:flex;flex-wrap:wrap;gap:6px}
+.modal-section .ingredient{background:var(--bg3);padding:4px 12px;border-radius:6px;font-size:.88em;color:var(--text)}
+.modal-section .step{margin-bottom:12px;padding:12px;background:var(--bg3);border-radius:8px}
+.modal-section .step .step-num{display:inline-block;background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px;font-size:.8em;font-weight:700;margin-right:8px}
+.modal-section .step .step-text{color:var(--text);font-size:.9em;line-height:1.7}
+.modal-tip{background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.2);border-radius:8px;padding:12px 16px;color:var(--text);font-size:.88em;line-height:1.6}
+
+.search-box{display:flex;gap:10px;margin:20px 0;flex-wrap:wrap}
+.search-box input{flex:1;min-width:250px;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:.95em}
+.search-box select{padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:.95em;cursor:pointer}
+footer{text-align:center;padding:40px 20px;color:var(--text2);font-size:.85em}
+@media(max-width:768px){
+  .hero h1{font-size:2em}.stats{gap:20px}.stat .num{font-size:1.5em}
+  .chart-wrap{height:350px}.chart-wrap.map{height:400px}
+  .cuisine-grid{grid-template-columns:1fr}.recipe-grid{grid-template-columns:1fr}
+  .modal-header{height:200px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>舌尖上的中国</h1>
+  <p>一图览尽中国 34 个省级行政区的美食文化 —— 八大菜系、地方风味、特色小吃，品味华夏五千年的烟火人间</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num">34</div><div class="label">省级行政区</div></div>
+  <div class="stat"><div class="num">8</div><div class="label">传统菜系</div></div>
+  <div class="stat"><div class="num">200+</div><div class="label">代表菜品</div></div>
+  <div class="stat"><div class="num">16</div><div class="label">名菜做法</div></div>
+</div>
+
+<nav>
+  <button class="active" onclick="switchTab('cuisine')">八大菜系</button>
+  <button onclick="switchTab('map')">美食地图</button>
+  <button onclick="switchTab('provinces')">各省详解</button>
+  <button onclick="switchTab('recipes')">名菜做法</button>
+</nav>
+
+<div class="container">
+
+<!-- ===== 八大菜系 ===== -->
+<div id="tab-cuisine" class="tab-panel active">
+  <div class="chart-box">
+    <h3>八大菜系风味雷达图</h3>
+    <div class="chart-wrap" id="chart-radar"></div>
+  </div>
+  <div class="chart-box">
+    <h3>菜系影响力对比</h3>
+    <div class="chart-wrap" id="chart-influence"></div>
+  </div>
+  <div class="cuisine-grid" id="cuisine-grid"></div>
+</div>
+
+<!-- ===== 美食地图 ===== -->
+<div id="tab-map" class="tab-panel">
+  <div class="chart-box">
+    <h3>中国各省美食分布 · 点击省份查看详情</h3>
+    <div class="chart-wrap map" id="chart-map"></div>
+  </div>
+  <div class="chart-box">
+    <h3>各省美食品类分布</h3>
+    <div class="chart-wrap" id="chart-bar"></div>
+  </div>
+</div>
+
+<!-- ===== 各省详解 ===== -->
+<div id="tab-provinces" class="tab-panel">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索省份、菜名、口味..." oninput="filterProvinces()">
+    <select id="cuisineFilter" onchange="filterProvinces()">
+      <option value="">全部菜系</option>
+      <option value="川菜">川菜</option><option value="粤菜">粤菜</option><option value="苏菜">苏菜</option>
+      <option value="闽菜">闽菜</option><option value="浙菜">浙菜</option><option value="湘菜">湘菜</option>
+      <option value="徽菜">徽菜</option><option value="鲁菜">鲁菜</option>
+      <option value="地方特色">地方特色</option>
+    </select>
+  </div>
+  <div class="province-grid" id="province-grid"></div>
+</div>
+
+<!-- ===== 名菜做法 ===== -->
+<div id="tab-recipes" class="tab-panel">
+  <div class="search-box">
+    <input type="text" id="recipeSearch" placeholder="搜索菜名、食材..." oninput="filterRecipes()">
+    <select id="recipeCuisineFilter" onchange="filterRecipes()">
+      <option value="">全部菜系</option>
+      <option value="川菜">川菜</option><option value="粤菜">粤菜</option><option value="苏菜">苏菜</option>
+      <option value="闽菜">闽菜</option><option value="浙菜">浙菜</option><option value="湘菜">湘菜</option>
+      <option value="徽菜">徽菜</option><option value="鲁菜">鲁菜</option>
+    </select>
+  </div>
+  <div class="recipe-grid" id="recipe-grid"></div>
+</div>
+
+</div>
+
+<!-- ===== Recipe Detail Modal ===== -->
+<div class="modal-overlay" id="recipeModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<footer>数据整理自公开资料 · 菜品图片来自 Wikipedia Commons · 做法仅供参考</footer>
+
+<script>
+// ===== IMAGE MAP (Wikipedia/Commons verified) =====
+const DISH_IMG = {
+  '麻婆豆腐':   'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Chen_Mapo_Tofu.jpg/960px-Chen_Mapo_Tofu.jpg',
+  '宫保鸡丁':   'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Kung-pao-shanghai.jpg/960px-Kung-pao-shanghai.jpg',
+  '白切鸡':     'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/BeiQieJi-WhiteCutChicken.jpg/960px-BeiQieJi-WhiteCutChicken.jpg',
+  '干炒牛河':   'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Beefchowfoon.jpg/960px-Beefchowfoon.jpg',
+  '佛跳墙':     'https://upload.wikimedia.org/wikipedia/commons/5/56/Buddha_soup_boul.jpg',
+  '海蛎煎':     'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Billyfoodoysteromelette.jpg/960px-Billyfoodoysteromelette.jpg',
+  '东坡肉':     'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/BCfood12.JPG/960px-BCfood12.JPG',
+  '松鼠鳜鱼':   'https://upload.wikimedia.org/wikipedia/commons/e/ef/%E6%9D%BE%E9%BC%A0%E9%B3%9C%E9%B1%BC.jpg',
+  '西湖醋鱼':   'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/West_Lake_Fish_in_Vinegar_Gravy_Feb_2026.jpg/960px-West_Lake_Fish_in_Vinegar_Gravy_Feb_2026.jpg',
+  '剁椒鱼头':   'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Steamed_Fish_Head_with_Diced_Chili_%2820150726122046%29.jpg/960px-Steamed_Fish_Head_with_Diced_Chili_%2820150726122046%29.jpg',
+  '辣椒炒肉':   'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Saut%C3%A9ed_pork_with_chili_pepper_at_Yinxiang_Restaurant_%2820210522180012%29.jpg/960px-Saut%C3%A9ed_pork_with_chili_pepper_at_Yinxiang_Restaurant_%2820210522180012%29.jpg',
+  '九转大肠':   'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Jiuqu_dachang_2009_03.jpg/960px-Jiuqu_dachang_2009_03.jpg',
+  '葱烧海参':   'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Braised_Guandong_Sea_Cucumber_with_Scallion_in_Sauce.jpg/960px-Braised_Guandong_Sea_Cucumber_with_Scallion_in_Sauce.jpg',
+  '回锅肉':     'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Huiguorou_made_from_Neijiang_local_pork_at_Daqian_Restaurant%2C_Beidadi_%2820251011111845%29.jpg/960px-Huiguorou_made_from_Neijiang_local_pork_at_Daqian_Restaurant%2C_Beidadi_%2820251011111845%29.jpg',
+  '北京烤鸭':   'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Peking_Duck%2C_2014_%2802%29.jpg/960px-Peking_Duck%2C_2014_%2802%29.jpg',
+  '兰州牛肉面': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/%E5%8A%A0%E8%BE%A3%E5%AD%90%E7%9A%84%E5%85%B0%E5%B7%9E%E7%89%9B%E8%82%89%E9%9D%A2.jpg/960px-%E5%8A%A0%E8%BE%A3%E5%AD%90%E7%9A%84%E5%85%B0%E5%B7%9E%E7%89%9B%E8%82%89%E9%9D%A2.jpg',
+  '清炖蟹粉狮子头': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Lions_head_meatballs_in_brown_sauce.jpg/960px-Lions_head_meatballs_in_brown_sauce.jpg',
+  '臭鳜鱼':     'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Fermented_mandarin_fish.jpg/960px-Fermented_mandarin_fish.jpg',
+  '毛豆腐':     'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Hairy_Tofu.jpg/960px-Hairy_Tofu.jpg',
+};
+
+// Cuisine card images: use the most iconic dish from each cuisine
+function cuisineImg(cuisine) {
+  const m = {
+    '川菜': DISH_IMG['麻婆豆腐'],
+    '粤菜': DISH_IMG['白切鸡'],
+    '苏菜': DISH_IMG['松鼠鳜鱼'],
+    '闽菜': DISH_IMG['佛跳墙'],
+    '浙菜': DISH_IMG['东坡肉'],
+    '湘菜': DISH_IMG['剁椒鱼头'],
+    '徽菜': DISH_IMG['回锅肉'],
+    '鲁菜': DISH_IMG['九转大肠'],
+  };
+  return m[cuisine] || DISH_IMG['北京烤鸭'];
+}
+
+// Recipe images: exact match or fallback to cuisine image
+function recipeImg(name, cuisine) {
+  return DISH_IMG[name] || cuisineImg(cuisine);
+}
+
+// ===== CUISINE DATA =====
+const CUISINES = [
+  {name:'川菜',taste:'麻辣鲜香',traits:'百菜百味，一菜一格',provinces:['四川','重庆'],dishes:'宫保鸡丁、麻婆豆腐、回锅肉、水煮鱼、夫妻肺片、鱼香肉丝、担担面、蒜泥白肉',story:'发源于巴蜀地区，以麻辣著称，讲究味型多变。川菜的灵魂是郫县豆瓣和花椒，是中国覆盖面最广的菜系之一。',emoji:'🌶️'},
+  {name:'粤菜',taste:'清鲜嫩滑',traits:'食在广州，味在潮汕',provinces:['广东','香港','澳门'],dishes:'白切鸡、烧鹅、蜜汁叉烧、清蒸石斑鱼、干炒牛河、虾饺、肠粉、煲仔饭',story:'粤菜追求食材本味，讲究火候和镬气。广州是千年商都，食材丰富，早茶文化名扬天下。',emoji:'🦐'},
+  {name:'苏菜',taste:'清鲜平和',traits:'刀工精细，造型雅致',provinces:['江苏'],dishes:'松鼠鳜鱼、清炖蟹粉狮子头、大煮干丝、盐水鸭、叫花鸡、扬州炒饭、无锡酱排骨',story:'江苏是鱼米之乡，河鲜丰富。淮扬菜是国宴首选，以精细典雅著称。',emoji:'🐟'},
+  {name:'闽菜',taste:'鲜香清淡',traits:'汤菜居多，讲究火候',provinces:['福建'],dishes:'佛跳墙、荔枝肉、海蛎煎、沙茶面、土笋冻、福州鱼丸、莆田卤面、姜母鸭',story:'福建靠海，海鲜丰富。佛跳墙是闽菜之王，沙茶面是厦门街头灵魂。',emoji:'🦀'},
+  {name:'浙菜',taste:'鲜美滑嫩',traits:'清爽不腻，制作精细',provinces:['浙江'],dishes:'东坡肉、西湖醋鱼、龙井虾仁、叫化童子鸡、宋嫂鱼羹、金华火腿、片儿川',story:'浙江是江南水乡，食材以鱼虾蔬果为主。东坡肉与苏东坡的典故最为人乐道。',emoji:'🍖'},
+  {name:'湘菜',taste:'香辣酸爽',traits:'无辣不欢，腊味飘香',provinces:['湖南'],dishes:'剁椒鱼头、辣椒炒肉、毛氏红烧肉、东安子鸡、腊味合蒸、口味虾、臭豆腐',story:'湖南人嗜辣，湘菜的辣是鲜辣。剁椒、腊肉是湘菜灵魂，长沙夜市是吃货天堂。',emoji:'🌶️'},
+  {name:'徽菜',taste:'咸鲜醇厚',traits:'重油重色重火功',provinces:['安徽'],dishes:'臭鳜鱼、毛豆腐、李鸿章大杂烩、符离集烧鸡、一品锅、刀板香、黄山炖鸽',story:'徽菜源于黄山一带，以山珍野味见长。臭鳜鱼和毛豆腐是最具辨识度的代表。',emoji:'🏔️'},
+  {name:'鲁菜',taste:'咸鲜纯正',traits:'大气磅礴，讲究火候',provinces:['山东'],dishes:'九转大肠、葱烧海参、糖醋鲤鱼、油爆双脆、德州扒鸡、孔府豆腐、把子肉、鲅鱼水饺',story:'鲁菜是八大菜系之首。山东是孔孟之乡，讲究礼仪和火候，是北方菜的代表。',emoji:'🥟'},
+];
+
+// ===== RECIPE DATA =====
+const RECIPES = [
+  {id:'mapo-tofu',name:'麻婆豆腐',cuisine:'川菜',diff:'中等',time:'20分钟',
+   main:['嫩豆腐 400g','牛肉末 100g'],aux:['蒜苗 2根','姜 1块','蒜 3瓣'],season:['郫县豆瓣酱 2勺','花椒粉 1勺','生抽 1勺','淀粉 1勺','辣椒面 适量'],
+   steps:['嫩豆腐切成2cm方块，入淡盐水焯2分钟捞出','热锅冷油，下牛肉末炒至酥香，加入豆瓣酱炒出红油','加姜蒜末爆香，倒入适量清水，加生抽调味','放入豆腐小火煮3分钟入味，水淀粉勾芡','出锅撒花椒粉和蒜苗碎即可'],
+   tip:'豆腐焯水时加盐可去豆腥味且不易碎；正宗做法用牛肉末，猪肉末也可替代。'},
+  {id:'kungpao-chicken',name:'宫保鸡丁',cuisine:'川菜',diff:'中等',time:'25分钟',
+   main:['鸡腿肉 300g','花生米 50g'],aux:['大葱 1根','干辣椒 8个','花椒 1小把','姜蒜 适量'],season:['生抽 2勺','醋 1勺','糖 1勺','料酒 1勺','淀粉 1勺','老抽 半勺'],
+   steps:['鸡腿肉切丁，加料酒、生抽、淀粉腌制15分钟','花生米小火炒至金黄，去皮备用','调碗汁：生抽、醋、糖、老抽、淀粉、水混合均匀','热油爆香花椒干辣椒，下鸡丁滑炒至变白','加入葱段和碗汁大火翻炒均匀，出锅前撒花生米'],
+   tip:'鸡腿肉比鸡胸肉更嫩；荔枝口味的秘诀在于糖醋比例恰当；花生米最后放保持酥脆。'},
+  {id:'white-chicken',name:'白切鸡',cuisine:'粤菜',diff:'中等',time:'40分钟',
+   main:['三黄鸡 1只(约1.5kg)'],aux:['姜 1大块','葱 3根','沙姜 1块'],season:['花生油 3勺','生抽 2勺','盐 适量'],
+   steps:['鸡处理干净，锅中加水没过鸡，放姜片葱结大火烧开','水开后转小火，提着鸡腿三浸三提，让鸡腔内外温度一致','完全浸入水中，小火浸煮20分钟，关火焖10分钟','捞出放入冰水中急冷，可使皮脆肉嫩','斩件装盘，姜葱蓉+花生油+盐做蘸料'],
+   tip:'三浸三提是关键步骤，保证鸡腔内外受热均匀；冰水急冷产生皮冻效果，皮爽肉滑。'},
+  {id:'beef-chow-fun',name:'干炒牛河',cuisine:'粤菜',diff:'较难',time:'15分钟',
+   main:['河粉 400g','牛肉 150g'],aux:['豆芽 100g','韭黄 50g','洋葱 半个'],season:['生抽 2勺','老抽 1勺','蚝油 1勺','糖 半勺','白胡椒粉 少许'],
+   steps:['牛肉逆纹切薄片，加生抽、蚝油、淀粉腌制10分钟','热锅冷油滑炒牛肉至七成熟，盛出','锅中油烧至冒烟，下河粉大火翻炒，用筷子抖散','加老抽上色翻炒均匀，加入豆芽、韭黄、洋葱丝','倒回牛肉翻炒均匀，加生抽蚝油调味出锅'],
+   tip:'河粉要提前用手抖散，不要用水冲；镬气靠大火和娴熟的颠锅，家庭版可两筷子辅助翻动。'},
+  {id:'squirrel-fish',name:'松鼠鳜鱼',cuisine:'苏菜',diff:'较难',time:'35分钟',
+   main:['鳜鱼 1条(约600g)'],aux:['虾仁 50g','青豆 30g','松仁 20g'],season:['番茄酱 3勺','白醋 2勺','糖 3勺','料酒 1勺','淀粉 适量','盐 适量'],
+   steps:['鳜鱼去骨留尾，鱼肉斜切十字花刀，深至皮但不断，加料酒盐腌制','鱼身均匀裹上干淀粉，抖去余粉','油温七成热，手提鱼尾倒悬入锅，炸至金黄定型','另起锅，番茄酱、糖、白醋、水调成糖醋汁，勾薄芡','将汁浇在鱼上，撒虾仁青豆松仁点缀'],
+   tip:'十字花刀要深但不断，炸后自然卷曲如松鼠尾巴；油温要够高才能瞬间定型。'},
+  {id:'lion-head',name:'清炖蟹粉狮子头',cuisine:'苏菜',diff:'中等',time:'90分钟',
+   main:['五花肉 500g(肥瘦4:6)'],aux:['蟹粉 80g','油菜心 6棵','鸡蛋清 1个'],season:['料酒 2勺','盐 适量','白胡椒粉 少许','葱姜水 3勺','淀粉 1勺'],
+   steps:['五花肉手工切石榴粒大小，不要绞碎，保持颗粒感','肉粒加蛋清、葱姜水、料酒、盐，顺时针搅打上劲','加入蟹粉拌匀，团成拳头大的肉丸，双手来回摔打紧实','砂锅底部垫白菜叶，放入狮子头，加清汤没过','小火慢炖1.5小时，出锅前放焯水的油菜心'],
+   tip:'肉一定要手工切，绞肉机打的口感完全不同；小火慢炖是关键，汤面微沸即可。'},
+  {id:'buddha-jumps-wall',name:'佛跳墙',cuisine:'闽菜',diff:'困难',time:'8小时',
+   main:['鲍鱼 4只','海参 4条','鱼翅(可用素翅) 100g','干贝 50g','花胶 50g','猪蹄 1只','老母鸡 半只'],aux:['花菇 8朵','鹌鹑蛋 8个','金华火腿 50g'],season:['料酒 半碗','盐 适量','姜 1块'],
+   steps:['所有干货提前1-2天分别泡发（鲍鱼48h、海参24h、花胶12h）','鸡和猪蹄焯水洗净，火腿切片','坛底铺姜片，依次码入鸡肉、猪蹄、火腿、花菇','再放入鲍鱼海参鱼翅干贝花胶，倒入料酒和清水','坛口用荷叶密封，小火煨6-8小时，最后加盐调味'],
+   tip:'佛跳墙的灵魂在于时间，小火慢煨让各种食材的鲜味充分交融；坛口密封防止香气流失。'},
+  {id:'oyster-omelet',name:'海蛎煎',cuisine:'闽菜',diff:'简单',time:'10分钟',
+   main:['鲜海蛎 200g','鸡蛋 3个'],aux:['红薯粉 80g','蒜苗 2根','香菜 适量'],season:['鱼露 1勺','白胡椒粉 少许','甜辣酱 适量'],
+   steps:['海蛎轻轻冲洗沥干，蒜苗切碎','红薯粉加适量水调成糊，不要太稀','粉糊加入海蛎和蒜苗碎拌匀','平底锅烧油，倒入粉浆摊平，打入鸡蛋搅散','煎至两面金黄，出锅淋甜辣酱撒香菜'],
+   tip:'红薯粉是闽南正宗做法，口感Q弹；海蛎不要过度清洗，保留鲜味；火候不宜太大。'},
+  {id:'dongpo-pork',name:'东坡肉',cuisine:'浙菜',diff:'中等',time:'2小时',
+   main:['五花肉 800g'],aux:['葱 3根','姜 1块','花雕酒 200ml'],season:['生抽 3勺','老抽 2勺','冰糖 50g','八角 2个','桂皮 1小块'],
+   steps:['五花肉切成5cm方块，冷水下锅焯水去血沫','砂锅底铺葱段姜片，肉皮朝下码入锅中','倒入花雕酒、生抽、老抽，加冰糖八角和桂皮','加水没过肉，大火烧开转小火慢炖1.5小时','将肉翻面皮朝上，再炖30分钟至筷子可轻松插入'],
+   tip:'苏东坡原话：慢着火，少着水，火候足时它自美；花雕酒是灵魂，不可省略。'},
+  {id:'westlake-fish',name:'西湖醋鱼',cuisine:'浙菜',diff:'中等',time:'20分钟',
+   main:['草鱼 1条(约700g)'],aux:['姜 1块','葱 2根'],season:['镇江香醋 3勺','糖 3勺','生抽 2勺','料酒 1勺','淀粉 适量'],
+   steps:['草鱼饿养2天去土腥，宰杀后劈成两片（雄片带骨）','锅中水加姜片料酒烧开，先煮雄片2分钟再放雌片煮3分钟','捞出摆盘，煮鱼水留一碗备用','另起锅，煮鱼水加糖、醋、生抽烧开，水淀粉勾芡','将糖醋汁浇在鱼身上，撒姜末即可'],
+   tip:'草鱼需饿养去泥土味；糖醋比例1:1是正宗杭州味；姜末乃画龙点睛，不可少。'},
+  {id:'chopped-pepper-fish-head',name:'剁椒鱼头',cuisine:'湘菜',diff:'中等',time:'30分钟',
+   main:['胖头鱼头 1个(约1.5kg)'],aux:['剁椒 150g','野山椒 50g','姜 1块','蒜 1头','葱 3根'],season:['料酒 2勺','蒸鱼豉油 3勺','盐 适量','猪油 1勺'],
+   steps:['鱼头从顶部劈开不切断，去鳃洗净，抹料酒和盐腌制15分钟','姜蒜切末，一半与剁椒野山椒混合，加猪油拌匀','盘底铺姜片和葱段，放上鱼头','将剁椒酱均匀铺满鱼头表面','大火蒸12-15分钟，出锅淋蒸鱼豉油，浇热油爆香'],
+   tip:'蒸的时间宁短勿长，鱼眼睛鼓出来就熟了；猪油提鲜；最后浇热油是灵魂一步。'},
+  {id:'pepper-pork',name:'辣椒炒肉',cuisine:'湘菜',diff:'简单',time:'10分钟',
+   main:['五花肉 300g','青辣椒 200g'],aux:['大蒜 5瓣','豆豉 1勺'],season:['生抽 2勺','老抽 半勺','料酒 1勺','盐 适量'],
+   steps:['五花肉切薄片，青辣椒斜切圈，大蒜拍碎','干锅不放油，辣椒入锅煸至表皮微焦，盛出','热锅少许油下五花肉，小火煸出油至微卷','加入蒜和豆豉炒香，加料酒生抽老抽翻炒','倒回辣椒大火翻炒均匀，加盐调味出锅'],
+   tip:'核心是辣椒先干煸出虎皮，肉要煸出油；湖南家常做法不放糖，靠豆豉提鲜。'},
+  {id:'smelly-mandarin-fish',name:'臭鳜鱼',cuisine:'徽菜',diff:'较难',time:'2天(含腌制)',
+   main:['鳜鱼 1条(约600g)'],aux:['猪肉末 100g','笋丁 50g','姜 1块','蒜 5瓣','干辣椒 适量'],season:['料酒 2勺','生抽 2勺','老抽 1勺','糖 1勺','盐 适量(腌制用)'],
+   steps:['鳜鱼宰杀洗净，表面抹薄盐，室温腌制1-2天至产生特殊气味','腌好的鱼冲洗表面黏液，沥干水分','热锅多油，鱼两面煎至金黄盛出','余油煸炒肉末笋丁至香，加姜蒜干辣椒','放入鱼，加料酒生抽老抽糖和少量水，小火焖8分钟收汁'],
+   tip:'腌制温度高则发酵快（夏天24h，冬天48h+）；腌鱼时有轻微臭味属正常，洗掉表面黏液即可；与徽州毛豆腐是绝配。'},
+  {id:'hairy-tofu',name:'毛豆腐',cuisine:'徽菜',diff:'中等',time:'3-5天(含发酵)',
+   main:['老豆腐 500g'],aux:['辣酱 适量','葱花 适量'],season:['盐 适量','菜籽油 适量'],
+   steps:['老豆腐切厚片，均匀摆放在干净竹筛上，盖纱布','置于20-25°C通风处发酵3-5天，直到表面长满白色菌丝','发酵好的毛豆腐表面有一层3-5cm的白色绒毛','平底锅放菜籽油烧热，毛豆腐入锅小火煎','煎至两面金黄，配辣酱和葱花食用'],
+   tip:'发酵在通风处，温度和湿度影响菌丝生长；菌丝应是洁白，若发绿发黑则不可食用；黄山毛豆腐最为正宗。'},
+  {id:'nine-turn-intestine',name:'九转大肠',cuisine:'鲁菜',diff:'较难',time:'2小时',
+   main:['猪大肠 1000g'],aux:['葱姜蒜 适量','香菜 适量','砂仁 2个'],season:['料酒 3勺','生抽 2勺','老抽 1勺','糖 2勺','醋 1勺','花椒 少许','肉桂 1小块','清汤 适量'],
+   steps:['大肠用盐和醋反复搓洗，里外翻洗至无异味','整根大肠焯水，捞出切成2cm段','锅中炒糖色至琥珀色，下大肠段翻炒上色','加料酒、生抽、老抽、各种香料和清汤','小火炖1.5小时至软烂，大火收汁，淋花椒油出锅'],
+   tip:'九转指制作工序多、味道层次丰富（酸甜苦辣咸）；洗大肠是关键步骤，马虎不得。'},
+  {id:'scallion-sea-cucumber',name:'葱烧海参',cuisine:'鲁菜',diff:'较难',time:'2天(含泡发)',
+   main:['干海参 4条','大葱 4根'],aux:['姜 1块','清汤 500ml'],season:['生抽 2勺','老抽 半勺','蚝油 2勺','糖 1勺','料酒 1勺','淀粉 适量'],
+   steps:['干海参提前泡发24-48小时（纯净水冷藏泡发，每天换水），柔软后剖肚去内脏','大葱切6cm段，热油炸至金黄，盛出备用','锅中留底油，姜片爆香后捞出','加清汤、生抽、老抽、蚝油、糖、料酒烧开','放入海参小火煨15分钟入味，放回葱段，水淀粉勾芡'],
+   tip:'海参泡发全程忌油；葱要单独炸至金黄才会有浓郁葱香；清汤可用鸡汤或高汤代替。'},
+];
+
+const PROVINCES = [
+  {name:'北京',cuisine:'地方特色·京菜',taste:'咸鲜醇厚',dishes:'北京烤鸭、涮羊肉、炸酱面、豆汁焦圈、卤煮火烧、炒肝、爆肚、艾窝窝',snacks:'豌豆黄、驴打滚、糖葫芦、芥末墩',city:'北京',note:'北京菜融合了宫廷菜、清真菜和山东菜的特点，北京烤鸭是国宴名菜。'},
+  {name:'天津',cuisine:'地方特色·津菜',taste:'咸鲜略甜',dishes:'狗不理包子、十八街麻花、耳朵眼炸糕、煎饼果子、锅巴菜、熟梨糕、罾蹦鲤鱼、贴饽饽熬小鱼',snacks:'杨村糕干、芝兰斋糕干、糖炒栗子',city:'天津',note:'天津是北方重要港口，津菜以河海两鲜见长，小吃文化尤其发达。'},
+  {name:'河北',cuisine:'地方特色·冀菜',taste:'咸鲜香醇',dishes:'驴肉火烧、金毛狮子鱼、李鸿章烩菜、白肉罩火烧、柴沟堡熏肉、邯郸拽面、沧州火锅鸡',snacks:'棋子烧饼、蜂蜜麻糖、保定糖葫芦',city:'保定/石家庄',note:'河北环绕京津，冀菜受鲁菜和京菜影响，以保定和承德菜最为出名。'},
+  {name:'山西',cuisine:'地方特色·晋菜',taste:'咸香酸辣',dishes:'刀削面、过油肉、平遥牛肉、山西烩菜、太谷饼、猫耳朵、莜面栲栳栳、头脑',snacks:'闻喜煮饼、稷山麻花、老陈醋',city:'太原/平遥',note:'山西是面食之乡，刀削面名扬天下。山西老陈醋是中国四大名醋之一。'},
+  {name:'内蒙古',cuisine:'地方特色·蒙餐',taste:'咸鲜浓郁',dishes:'手把肉、烤全羊、涮羊肉、奶豆腐、蒙古奶茶、风干牛肉、羊杂碎、血肠',snacks:'奶皮子、炒米、黄油',city:'呼和浩特',note:'内蒙古以牛羊肉和奶制品为主，烤全羊是最高礼仪的宴会菜。'},
+  {name:'辽宁',cuisine:'地方特色·辽菜',taste:'咸鲜浓重',dishes:'锅包肉、猪肉炖粉条、小鸡炖蘑菇、大连海鲜、老边饺子、沈阳回头、咸鱼饼子',snacks:'海城馅饼、马家烧麦、不老林糖',city:'沈阳/大连',note:'辽宁地处东北，辽菜融合了满族和汉族饮食，锅包肉是招牌菜之一。'},
+  {name:'吉林',cuisine:'地方特色·吉菜',taste:'咸鲜浓郁',dishes:'白肉血肠、清蒸松花江白鱼、鹿茸三珍汤、冷面、打糕、石锅拌饭、狗肉火锅',snacks:'雪衣豆沙、李连贵熏肉大饼、鼎丰真糕点',city:'长春/延吉',note:'吉林有大量朝鲜族聚居，朝鲜族饮食如冷面、打糕是重要特色。'},
+  {name:'黑龙江',cuisine:'地方特色·龙菜',taste:'咸鲜浓郁',dishes:'锅包肉、地三鲜、杀猪菜、大列巴、红肠、得莫利炖鱼、小鸡炖蘑菇',snacks:'哈尔滨红肠、大列巴面包、冻梨',city:'哈尔滨',note:'哈尔滨受俄罗斯影响，红肠和大列巴是独特的中西融合美食。'},
+  {name:'上海',cuisine:'地方特色·本帮菜',taste:'浓油赤酱',dishes:'红烧肉、油爆虾、八宝鸭、糖醋小排、腌笃鲜、水晶虾仁、蟹粉豆腐、响油鳝丝',snacks:'南翔小笼、生煎包、排骨年糕、蟹壳黄',city:'上海',note:'上海本帮菜源于家常菜，浓油赤酱，甜咸适口，小笼包和生煎是上海标志。'},
+  {name:'江苏',cuisine:'苏菜',taste:'清鲜平和',dishes:'松鼠鳜鱼、清炖蟹粉狮子头、大煮干丝、盐水鸭、叫花鸡、扬州炒饭、无锡酱排骨、太湖三白',snacks:'扬州包子、苏州糕团、黄桥烧饼、鸭血粉丝汤',city:'南京/苏州/扬州',note:'江苏是鱼米之乡，淮扬菜是国宴主菜系，苏式点心精致绝伦。'},
+  {name:'浙江',cuisine:'浙菜',taste:'鲜美滑嫩',dishes:'东坡肉、西湖醋鱼、龙井虾仁、叫化童子鸡、宋嫂鱼羹、金华火腿、片儿川、嘉兴粽子',snacks:'宁波汤圆、杭州定胜糕、西湖藕粉、知味观猫耳朵',city:'杭州/宁波',note:'浙菜以杭州菜为代表，清爽鲜美，注重时令。东坡肉与苏东坡的典故最为人乐道。'},
+  {name:'安徽',cuisine:'徽菜',taste:'咸鲜醇厚',dishes:'臭鳜鱼、毛豆腐、李鸿章大杂烩、符离集烧鸡、一品锅、刀板香、黄山炖鸽',snacks:'徽墨酥、黄山烧饼、巢湖银鱼干、三河米饺',city:'黄山/合肥',note:'徽菜以山珍为主，臭鳜鱼闻着臭吃着香，是徽菜的灵魂。'},
+  {name:'福建',cuisine:'闽菜',taste:'鲜香清淡',dishes:'佛跳墙、荔枝肉、海蛎煎、沙茶面、土笋冻、福州鱼丸、莆田卤面、姜母鸭',snacks:'福州芋泥、厦门馅饼、龙岩花生、闽南麻糍',city:'福州/厦门',note:'福建靠海，海鲜丰富。佛跳墙是闽菜之王，沙茶面是厦门街头灵魂。'},
+  {name:'江西',cuisine:'地方特色·赣菜',taste:'咸香鲜辣',dishes:'藜蒿炒腊肉、南昌炒粉、瓦罐汤、鄱阳湖胖鱼头、粉蒸肉、三杯鸡、莲花血鸭',snacks:'九江茶饼、南昌白糖糕、灯盏粿、兴国米粉鱼',city:'南昌/景德镇',note:'赣菜咸辣兼备，瓦罐汤是南昌一绝，藜蒿炒腊肉是鄱阳湖特色。'},
+  {name:'山东',cuisine:'鲁菜',taste:'咸鲜纯正',dishes:'九转大肠、葱烧海参、糖醋鲤鱼、油爆双脆、德州扒鸡、孔府豆腐、把子肉、鲅鱼水饺',snacks:'周村烧饼、济南油旋、青岛啤酒、潍坊肉火烧',city:'济南/青岛/曲阜',note:'鲁菜是八大菜系之首，孔府菜是官府菜代表，青岛啤酒配海鲜绝佳。'},
+  {name:'河南',cuisine:'地方特色·豫菜',taste:'咸鲜微辣',dishes:'胡辣汤、鲤鱼焙面、烩面、牡丹燕菜、开封灌汤包、道口烧鸡、浆面条、洛阳水席',snacks:'开封花生糕、安阳血糕、信阳板鸭',city:'郑州/洛阳/开封',note:'河南是中华文明发源地，洛阳水席是唐代宫廷宴，胡辣汤是河南人的早餐灵魂。'},
+  {name:'湖北',cuisine:'地方特色·鄂菜',taste:'咸鲜微辣',dishes:'热干面、武昌鱼、排骨藕汤、沔阳三蒸、精武鸭脖、公安牛肉火锅、清蒸梁子湖大闸蟹',snacks:'孝感麻糖、武汉豆皮、黄石港饼、四季美汤包',city:'武汉',note:'湖北是千湖之省，水产丰富。热干面是中国四大名面之一。'},
+  {name:'湖南',cuisine:'湘菜',taste:'香辣酸爽',dishes:'剁椒鱼头、辣椒炒肉、毛氏红烧肉、东安子鸡、腊味合蒸、口味虾、臭豆腐',snacks:'长沙臭豆腐、糖油粑粑、常德酱板鸭、湘西腊肉',city:'长沙',note:'湖南人无辣不欢。剁椒鱼头是湘菜名片，长沙夜市是吃货天堂。'},
+  {name:'广东',cuisine:'粤菜',taste:'清鲜嫩滑',dishes:'白切鸡、烧鹅、蜜汁叉烧、清蒸石斑鱼、干炒牛河、虾饺、肠粉、煲仔饭、老火靓汤、潮汕牛肉丸',snacks:'双皮奶、钵仔糕、广式月饼、老婆饼',city:'广州/顺德/潮汕',note:'食在广州，厨出顺德。粤菜是中国最国际化的菜系，早茶文化是广东人生活方式。'},
+  {name:'广西',cuisine:'地方特色·桂菜',taste:'酸辣鲜香',dishes:'桂林米粉、螺蛳粉、柠檬鸭、巴马香猪、纸包鸡、老友粉、玉林牛巴、酸野',snacks:'梧州龟苓膏、柳州云片糕、桂林马蹄糕',city:'南宁/桂林/柳州',note:'螺蛳粉已成为国民级网红美食。广西酸野文化独特，壮族饮食影响深远。'},
+  {name:'海南',cuisine:'地方特色·琼菜',taste:'清淡鲜美',dishes:'文昌鸡、加积鸭、东山羊、和乐蟹、椰子鸡、清补凉、海南鸡饭、临高烤乳猪',snacks:'椰丝糯米粑、陵水酸粉、芒果肠粉',city:'海口/三亚',note:'海南四大名菜享誉全国，椰子鸡火锅是近年最火的海南菜。'},
+  {name:'重庆',cuisine:'川菜',taste:'麻辣鲜香',dishes:'重庆火锅、毛血旺、辣子鸡、水煮鱼、黔江鸡杂、重庆小面、酸辣粉、万州烤鱼',snacks:'陈麻花、合川桃片、江津米花糖',city:'重庆',note:'重庆火锅是重庆的城市名片，九宫格牛油锅底是正宗吃法。'},
+  {name:'四川',cuisine:'川菜',taste:'麻辣鲜香',dishes:'宫保鸡丁、麻婆豆腐、回锅肉、水煮鱼、夫妻肺片、鱼香肉丝、担担面、蒜泥白肉、串串香',snacks:'三大炮、蛋烘糕、凉粉凉面、赖汤圆',city:'成都/乐山/自贡',note:'食在中国，味在四川。川菜是中国覆盖面最广的菜系，成都被联合国评为美食之都。'},
+  {name:'贵州',cuisine:'地方特色·黔菜',taste:'酸辣鲜香',dishes:'酸汤鱼、肠旺面、丝娃娃、辣子鸡、折耳根炒腊肉、遵义羊肉粉、苗家酸汤',snacks:'贵阳豆腐圆子、青岩猪脚、黄粑',city:'贵阳/凯里',note:'贵州人嗜酸，三天不吃酸走路打蹿蹿。苗家酸汤鱼是贵州最具代表性的美食。'},
+  {name:'云南',cuisine:'地方特色·滇菜',taste:'酸辣鲜香',dishes:'过桥米线、汽锅鸡、宣威火腿、野生菌火锅、大理酸辣鱼、丽江腊排骨、傣味烤鱼',snacks:'鲜花饼、大理乳扇、烧饵块、腾冲大救驾',city:'昆明/大理/丽江',note:'云南民族众多，饮食文化丰富。过桥米线享誉全国，野生菌是云南的天然宝藏。'},
+  {name:'西藏',cuisine:'地方特色·藏餐',taste:'咸香浓郁',dishes:'糌粑、酥油茶、牦牛肉、藏面、藏式酸奶、青稞酒、藏香猪、鲁朗石锅鸡',snacks:'奶渣饼、风干牦牛肉、甜茶',city:'拉萨',note:'藏餐以牦牛肉和青稞为主，酥油茶是日常必备饮品，石锅鸡是林芝特色。'},
+  {name:'陕西',cuisine:'地方特色·陕菜',taste:'咸鲜酸辣',dishes:'羊肉泡馍、肉夹馍、凉皮、Biangbiang面、岐山臊子面、葫芦头、陕西锅盔',snacks:'甑糕、柿子饼、黄桂稠酒、西安镜糕',city:'西安',note:'西安是十三朝古都，陕菜历史悠久。肉夹馍和羊肉泡馍是陕西的双子星。'},
+  {name:'甘肃',cuisine:'地方特色·陇菜',taste:'咸鲜微辣',dishes:'兰州牛肉面、手抓羊肉、天水呱呱、静宁烧鸡、陇西腊肉、酿皮子',snacks:'兰州灰豆子、甜醅子、热冬果',city:'兰州',note:'兰州牛肉面是中国第一面，一清二白三红四绿五黄，兰州人从早吃到晚。'},
+  {name:'青海',cuisine:'地方特色·青味',taste:'咸鲜醇厚',dishes:'手抓羊肉、青海土火锅、酿皮、尕面片、羊肠面、牦牛肉、青海老酸奶、甜醅',snacks:'青稞饼、奶茶、酥油糌粑',city:'西宁',note:'青海地处青藏高原，以牛羊肉和奶制品为主，青海老酸奶全国闻名。'},
+  {name:'宁夏',cuisine:'地方特色·清真菜',taste:'咸鲜略辣',dishes:'手抓羊肉、烩羊杂碎、清蒸羊羔肉、羊肉搓面、宁夏滩羊肉',snacks:'中卫蒿子面、糖麻丫、八宝茶',city:'银川',note:'宁夏滩羊是中国最好的羊肉之一，手抓羊肉鲜嫩不膻。'},
+  {name:'新疆',cuisine:'地方特色·清真菜',taste:'咸鲜香辣',dishes:'大盘鸡、烤羊肉串、手抓饭、馕、拉条子、烤包子、椒麻鸡、大盘肚',snacks:'新疆酸奶、葡萄干、巴旦木、哈密瓜',city:'乌鲁木齐/喀什',note:'新疆是多民族聚居区，大盘鸡和烤羊肉串已走向全国。'},
+  {name:'台湾',cuisine:'地方特色·台菜',taste:'清淡鲜甜',dishes:'卤肉饭、蚵仔煎、凤梨酥、牛肉面、珍珠奶茶、三杯鸡、盐酥鸡、刈包',snacks:'芋圆、车轮饼、大肠包小肠',city:'台北/台南',note:'台湾美食融合了闽南、客家、日本和原住民饮食，小吃夜市文化是台湾标志。'},
+  {name:'香港',cuisine:'粤菜',taste:'清鲜嫩滑',dishes:'烧鹅、叉烧、云吞面、煲仔饭、避风塘炒蟹、鸡蛋仔、菠萝包、丝袜奶茶',snacks:'蛋挞、格仔饼、咖喱鱼蛋、碗仔翅',city:'香港',note:'香港是美食天堂，中西融合。茶餐厅文化独特，烧味和点心是世界级水准。'},
+  {name:'澳门',cuisine:'粤菜+葡国菜',taste:'咸鲜微甜',dishes:'葡式蛋挞、猪扒包、澳门烧肉、非洲鸡、马介休球、水蟹粥、木糠布丁',snacks:'杏仁饼、花生糖、肉干',city:'澳门',note:'澳门是中西饮食文化交汇点，葡国菜和粤菜的融合是独特亮点。'},
+];
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab==='cuisine'){renderRadar();renderInfluence()}
+  if (tab==='map'){renderMap();renderBar()}
+  if (tab==='recipes'){renderRecipeGrid()}
+  setTimeout(()=>{
+    if (tab==='cuisine'){renderRadar();renderInfluence()}
+    if (tab==='map'){renderMap();renderBar()}
+  },100);
+}
+
+// ===== CUISINE GRID WITH IMAGES =====
+function renderCuisineGrid(){
+  document.getElementById('cuisine-grid').innerHTML = CUISINES.map(c => `
+    <div class="cuisine-card">
+      <img class="card-img" src="${cuisineImg(c.name)}" alt="${c.name}" loading="lazy"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-fb" style="display:none">${c.emoji}</div>
+      <div class="card-body">
+        <h3>${c.emoji} ${c.name}</h3>
+        <div>${c.provinces.map(p => `<span class="province">${p}</span>`).join('')}</div>
+        <div style="color:var(--accent);font-size:.9em;margin:6px 0;">${c.traits} · ${c.taste}</div>
+        <div class="dishes">
+          ${c.dishes.split('、').map(d => `<span class="dish-tag">${d}</span>`).join('')}
+        </div>
+        <div style="color:var(--text2);font-size:.82em;margin-top:8px;line-height:1.6;">${c.story}</div>
+      </div>
+    </div>
+  `).join('');
+}
+renderCuisineGrid();
+
+// ===== PROVINCE GRID =====
+function renderProvinceGrid(filter='',cuisine=''){
+  const grid = document.getElementById('province-grid');
+  const filtered = PROVINCES.filter(p => {
+    const ms = !filter||p.name.includes(filter)||p.dishes.includes(filter)||p.snacks.includes(filter)||p.cuisine.includes(filter)||p.taste.includes(filter);
+    const mc = !cuisine||p.cuisine.includes(cuisine);
+    return ms&&mc;
+  });
+  grid.innerHTML = filtered.map(p => `
+    <div class="province-card">
+      <div class="pname">${p.name}</div>
+      <div class="pcuisine">${p.cuisine} · ${p.taste}</div>
+      <div class="psection"><div class="title">🏆 代表菜</div><div class="content">${p.dishes}</div></div>
+      <div class="psection"><div class="title">🍡 特色小吃</div><div class="content">${p.snacks}</div></div>
+      <div class="psection"><div class="title">📍 推荐城市</div><div class="content">${p.city}</div></div>
+      <div style="color:var(--text2);font-size:.82em;margin-top:6px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px;">${p.note}</div>
+    </div>
+  `).join('');
+}
+renderProvinceGrid();
+
+function filterProvinces(){
+  renderProvinceGrid(document.getElementById('searchInput').value.trim(), document.getElementById('cuisineFilter').value);
+}
+
+// ===== RECIPE GRID =====
+function renderRecipeGrid(filter='',cuisine=''){
+  const grid = document.getElementById('recipe-grid');
+  const filtered = RECIPES.filter(r => {
+    const ms = !filter||r.name.includes(filter)||r.main.concat(r.aux).concat(r.season).some(i=>i.includes(filter))||r.cuisine.includes(filter);
+    const mc = !cuisine||r.cuisine===cuisine;
+    return ms&&mc;
+  });
+  grid.innerHTML = filtered.map(r => `
+    <div class="recipe-card" onclick="openRecipe('${r.id}')">
+      <div class="recipe-img-wrap">
+        <img class="recipe-img" src="${recipeImg(r.name, r.cuisine)}" alt="${r.name}" loading="lazy"
+          onerror="this.style.background='var(--bg3)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22><rect fill=%22%23242836%22 width=%22320%22 height=%22180%22/><text fill=%22%23999%22 x=%22160%22 y=%2295%22 text-anchor=%22middle%22 font-size=%2240%22>🍳</text></svg>'">
+        <div class="recipe-overlay"><span>查看做法</span></div>
+      </div>
+      <div class="recipe-body">
+        <span class="recipe-cuisine-tag">${r.cuisine}</span>
+        <div class="recipe-name">${r.name}</div>
+        <div class="recipe-meta">
+          <span>🔥 ${r.diff}</span><span>⏱️ ${r.time}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+renderRecipeGrid();
+
+function filterRecipes(){
+  renderRecipeGrid(document.getElementById('recipeSearch').value.trim(), document.getElementById('recipeCuisineFilter').value);
+}
+
+// ===== RECIPE MODAL =====
+function openRecipe(id){
+  const r = RECIPES.find(r=>r.id===id);
+  if(!r)return;
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <img src="${recipeImg(r.name, r.cuisine)}" alt="${r.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%22280%22><rect fill=%22%23242836%22 width=%22720%22 height=%22280%22/><text fill=%22%23999%22 x=%22360%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2260%22>🍳</text></svg>'">
+    </div>
+    <div class="modal-body">
+      <h2>${r.name}</h2>
+      <div class="modal-tags">
+        <span class="tag-cuisine">${r.cuisine}</span><span class="tag-diff">🔥 ${r.diff}</span><span class="tag-time">⏱️ ${r.time}</span>
+      </div>
+      <div class="modal-section"><h4>🥩 主料</h4><div class="ingredients">${r.main.map(i=>`<span class="ingredient">${i}</span>`).join('')}</div></div>
+      <div class="modal-section"><h4>🥬 辅料</h4><div class="ingredients">${r.aux.map(i=>`<span class="ingredient">${i}</span>`).join('')}</div></div>
+      <div class="modal-section"><h4>🧂 调料</h4><div class="ingredients">${r.season.map(i=>`<span class="ingredient">${i}</span>`).join('')}</div></div>
+      <div class="modal-section"><h4>📋 步骤</h4>${r.steps.map((s,i)=>`<div class="step"><span class="step-num">${i+1}</span><span class="step-text">${s}</span></div>`).join('')}</div>
+      <div class="modal-tip">💡 <b>小贴士：</b>${r.tip}</div>
+    </div>`;
+  document.getElementById('recipeModal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('recipeModal').classList.remove('show');
+  document.body.style.overflow='';
+}
+
+// ===== CHARTS =====
+let radarCh, infCh, mapCh, barCh;
+function renderRadar(){
+  if(!radarCh)radarCh=echarts.init(document.getElementById('chart-radar'));
+  const ind = CUISINES.map(c=>({name:c.name,max:100}));
+  radarCh.setOption({
+    tooltip:{},legend:{data:['麻辣度','鲜美度','精细度','油重度','知名度'],textStyle:{color:'#999'}},
+    radar:{indicator:ind,shape:'polygon',axisName:{color:'#999'},splitArea:{areaStyle:{color:['#1a1d27','#0f1117']}}},
+    series:[{type:'radar',data:[
+      {name:'麻辣度',value:[95,5,5,8,5,80,8,15],areaStyle:{opacity:.15}},
+      {name:'鲜美度',value:[30,90,85,88,82,35,65,70],areaStyle:{opacity:.15}},
+      {name:'精细度',value:[40,95,90,80,85,45,70,75],areaStyle:{opacity:.15}},
+      {name:'油重度',value:[80,35,45,40,42,75,78,65],areaStyle:{opacity:.15}},
+      {name:'知名度',value:[95,90,82,70,78,80,60,72],areaStyle:{opacity:.15}},
+    ],lineStyle:{width:2}}]
+  });
+}
+function renderInfluence(){
+  if(!infCh)infCh=echarts.init(document.getElementById('chart-influence'));
+  const s = [...CUISINES].sort((a,b)=>b.dishes.split('、').length-a.dishes.split('、').length);
+  infCh.setOption({
+    tooltip:{trigger:'axis'},grid:{left:80,right:40,bottom:20,top:10},
+    xAxis:{type:'value',axisLabel:{color:'#999'}},
+    yAxis:{type:'category',data:s.map(c=>c.name).reverse(),axisLabel:{color:'#ddd'}},
+    series:[{type:'bar',data:s.map(c=>c.dishes.split('、').length).reverse(),
+      itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#e74c3c'},{offset:1,color:'#f39c12'}])},
+      label:{show:true,position:'right',color:'#999'}}]
+  });
+}
+async function renderMap(){
+  if(!mapCh)mapCh=echarts.init(document.getElementById('chart-map'));
+  try{
+    const resp=await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
+    echarts.registerMap('china',await resp.json());
+    const md=PROVINCES.map(p=>({
+      name:(p.name==='香港'?'香港特别行政区':p.name==='澳门'?'澳门特别行政区':p.name==='内蒙古'?'内蒙古自治区':p.name==='西藏'?'西藏自治区':p.name==='新疆'?'新疆维吾尔自治区':p.name==='广西'?'广西壮族自治区':p.name==='宁夏'?'宁夏回族自治区':p.name.endsWith('省')?p.name:p.name+'省').replace('重庆省','重庆市').replace('北京省','北京市').replace('天津省','天津市').replace('上海省','上海市').replace('台湾省','台湾省'),
+      value:p.dishes.split('、').length+p.snacks.split('、').length
+    }));
+    mapCh.setOption({
+      tooltip:{trigger:'item',formatter:p=>p.name?`<b>${p.name}</b><br/>美食品类: ${p.value||0} 种`:''},
+      visualMap:{min:5,max:18,text:['多','少'],realtime:false,calculable:true,inRange:{color:['#2a1a0a','#4a2010','#8b2500','#c0392b','#e74c3c']},textStyle:{color:'#999'}},
+      series:[{type:'map',map:'china',data:md,label:{show:true,color:'#ccc',fontSize:10},
+        emphasis:{label:{show:true,color:'#fff',fontSize:14},itemStyle:{areaColor:'#f39c12'}},
+        itemStyle:{borderColor:'#3a3d4a',borderWidth:.5}}]
+    });
+    mapCh.off('click');mapCh.on('click',function(par){
+      if(par.name){
+        document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        document.getElementById('tab-provinces').classList.add('active');
+        document.querySelectorAll('nav button')[2].classList.add('active');
+        document.getElementById('searchInput').value=par.name.replace(/省|市|特别行政区|自治区|维吾尔|壮族|回族/g,'');
+        renderProvinceGrid(par.name.replace(/省|市|特别行政区|自治区|维吾尔|壮族|回族/g,''));
+      }
+    });
+  }catch(e){
+    mapCh.setOption({title:{text:'地图加载中...',left:'center',top:'center',textStyle:{color:'#999',fontSize:16}}});
+    setTimeout(renderMap,1500);
+  }
+}
+function renderBar(){
+  if(!barCh)barCh=echarts.init(document.getElementById('chart-bar'));
+  const s=[...PROVINCES].sort((a,b)=>(b.dishes.split('、').length+b.snacks.split('、').length)-(a.dishes.split('、').length+a.snacks.split('、').length));
+  barCh.setOption({
+    tooltip:{trigger:'axis'},grid:{left:80,right:60,bottom:20,top:30},
+    xAxis:{type:'value',axisLabel:{color:'#999'}},
+    yAxis:{type:'category',data:s.map(p=>p.name).reverse(),axisLabel:{color:'#ddd',fontSize:11}},
+    series:[
+      {type:'bar',name:'代表菜',data:s.map(p=>p.dishes.split('、').length).reverse(),itemStyle:{color:'#e74c3c'},stack:'total'},
+      {type:'bar',name:'小吃',data:s.map(p=>p.snacks.split('、').length).reverse(),itemStyle:{color:'#f39c12'},stack:'total'}
+    ],
+    legend:{data:['代表菜','小吃'],textStyle:{color:'#999'},top:0}
+  });
+}
+
+window.addEventListener('load',()=>{renderRadar();renderInfluence()});
+window.addEventListener('resize',()=>{
+  const t=document.querySelector('.tab-panel.active')?.id;
+  if(t==='tab-cuisine'){renderRadar();renderInfluence()}
+  if(t==='tab-map'){renderMap();renderBar()}
+});
+</script>
+</body>
+</html>
